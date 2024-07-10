@@ -4,6 +4,7 @@ use ark_std::hash::Hash;
 use ark_std::rand::Rng;
 pub mod bowe_hopwood;
 pub mod injective_map;
+pub mod monolith;
 pub mod pedersen;
 pub mod poseidon;
 pub mod sha256;

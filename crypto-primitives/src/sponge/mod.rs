@@ -9,6 +9,7 @@ pub mod constraints;
 mod absorb;
 pub use absorb::*;
 
+pub mod generic;
 /// The sponge for Poseidon
 ///
 /// This implementation of Poseidon is entirely from Fractal's implementation in [COS20][cos]
@@ -16,7 +17,6 @@ pub use absorb::*;
 ///
 /// [cos]: https://eprint.iacr.org/2019/1076
 pub mod poseidon;
-
 #[cfg(test)]
 mod test;
 
