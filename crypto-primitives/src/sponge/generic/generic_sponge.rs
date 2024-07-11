@@ -1,6 +1,6 @@
 use crate::crh::monolith::fields::goldilocks::Fr as F64;
 use crate::{
-    crh::monolith::hash::{MonolithParams, CRH64},
+    crh::monolith::{permute::MonolithPermute, MonolithParams},
     sponge::{
         field_cast, squeeze_field_elements_with_sizes_default_impl, Absorb, CryptographicSponge,
         DuplexSpongeMode, FieldBasedCryptographicSponge, FieldElementSize, SpongeExt,
@@ -43,7 +43,7 @@ impl<F: PrimeField> MonolithSponge<F> {
                 &self.state[i].into_bigint().to_bytes_le(),
             ))
         }
-        CRH64::<12>::permute(input.as_mut_slice(), &self.parameters.params);
+        MonolithPermute::<12>::permute(input.as_mut_slice(), &self.parameters.params);
         for i in 0..self.parameters.params.round_constants[0].len() {
             self.state[i] = F::from_le_bytes_mod_order(&input[i].into_bigint().to_bytes_le());
         }
