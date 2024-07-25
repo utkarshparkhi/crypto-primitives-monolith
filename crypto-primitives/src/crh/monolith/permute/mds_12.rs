@@ -4,6 +4,7 @@
 // LICENSE file in the root directory of this source tree.
 
 use ark_ff::BigInteger;
+use ark_ff::BigInteger64;
 // FFT-BASED MDS MULTIPLICATION HELPER FUNCTIONS
 // ================================================================================================
 use ark_ff::Fp64;
@@ -75,9 +76,10 @@ pub fn mds_multiply_with_rc<T: FpConfig<1>>(
     let state_l = mds_multiply_freq(state_l);
     for r in 0..12 {
         // Both have less than 40 bits
-        let mut s = state_l[r] as u128 + ((state_h[r] as u128) << 32);
-        s += round_constants[r].0 .0[0] as u128;
+        let s = state_l[r] as u128 + ((state_h[r] as u128) << 32);
+
         state[r] = Fp64::<T>::from(s);
+        state[r] += round_constants[r];
     }
 }
 
@@ -106,6 +108,22 @@ pub fn mds_multiply_u128<T: FpConfig<1>>(state: &mut [u128; 12]) {
                 .unwrap(),
         ) as u128;
     }
+}
+
+pub fn circ_mat<T: FpConfig<1>>(row: &[u64]) -> Vec<Vec<Fp64<T>>> {
+    let t = row.len();
+    let mut mat: Vec<Vec<Fp64<T>>> = Vec::with_capacity(t);
+
+    let mut rot: Vec<Fp64<T>> = row
+        .iter()
+        .map(|i| Fp64::<T>::from(BigInteger64::from(*i)))
+        .collect();
+    mat.push(rot.clone());
+    for _ in 1..t {
+        rot.rotate_right(1);
+        mat.push(rot.clone());
+    }
+    mat
 }
 
 pub fn mds_multiply_with_rc_u128<T: FpConfig<1>>(
@@ -218,7 +236,6 @@ fn block2(x: [(i64, i64); 3], y: [(i64, i64); 3]) -> [(i64, i64); 3] {
 
     [z0, z1, z2]
 }
-
 #[inline(always)]
 fn block3(x: [i64; 3], y: [i64; 3]) -> [i64; 3] {
     let [x0, x1, x2] = x;
@@ -280,7 +297,6 @@ pub mod mds_tests {
     use crate::crh::monolith::fields::goldilocks::FrConfig;
     use ark_ff::fields::MontBackend;
     use ark_ff::fields::PrimeField;
-    use ark_ff::BigInteger64;
     use ark_ff::UniformRand;
     use ark_std::ops::{AddAssign, MulAssign};
     use ark_std::Zero;
@@ -300,21 +316,6 @@ pub mod mds_tests {
             }
         }
         out
-    }
-
-    fn circ_mat(row: &[u64]) -> Vec<Vec<Scalar>> {
-        let t = row.len();
-        let mut mat: Vec<Vec<Scalar>> = Vec::with_capacity(t);
-        let mut rot: Vec<Scalar> = row
-            .iter()
-            .map(|i| Scalar::from(BigInteger64::from(*i)))
-            .collect();
-        mat.push(rot.clone());
-        for _ in 1..t {
-            rot.rotate_right(1);
-            mat.push(rot.clone());
-        }
-        mat
     }
 
     #[test]

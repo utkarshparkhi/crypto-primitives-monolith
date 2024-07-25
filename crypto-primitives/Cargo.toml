@@ -38,7 +38,7 @@ tracing = { version = "0.1", default-features = false, features = [ "attributes"
 hashbrown = { version = "0.14", default-features = false, features = ["inline-more", "allocator-api2"], optional = true  }
 
 [features]
-default = ["std","crh"]
+default = ["std","crh", "r1cs"]
 std = [ "ark-ff/std", "ark-ec/std", "ark-std/std", "ark-relations/std" ]
 print-trace = [ "ark-std/print-trace" ]
 parallel = [ "std", "rayon", "ark-ec/parallel", "ark-std/parallel", "ark-ff/parallel" ]

@@ -11,17 +11,20 @@ use std::time::Instant;
 mod mds_12;
 mod mds_8;
 
+#[cfg(feature = "r1cs")]
+pub mod constraints;
+
 pub struct MonolithPermute<const T: usize>;
 impl<const T: usize> MonolithPermute<T> {
     pub fn s(byt: u8) -> u8 {
         (byt ^ (!byt.rotate_left(1) & byt.rotate_left(2) & byt.rotate_left(3))).rotate_left(1)
     }
     pub fn bar(element: F64) -> F64 {
-        let mut be_bytes = element.into_bigint().to_bytes_be();
-        for byt in &mut be_bytes {
+        let mut le_bytes = element.into_bigint().to_bytes_le();
+        for byt in &mut le_bytes {
             *byt = Self::s(*byt);
         }
-        <F64 as PrimeField>::from_be_bytes_mod_order(&be_bytes)
+        <F64 as PrimeField>::from_le_bytes_mod_order(&le_bytes)
     }
     pub fn bars(input: &mut [F64; T], params: &MonolithParams) {
         let mut out_bars: Vec<_> = vec![];
@@ -107,8 +110,11 @@ impl<const T: usize> MonolithPermute<T> {
 
         for rc in params.round_constants.iter() {
             Self::bars(&mut inp, params);
+            println!("after bars: {:?}", inp);
             Self::bricks(&mut inp);
+            println!("after bricks: {:?}", inp);
             Self::concrete_wrc(&mut inp, rc);
+            println!("after conc: {:?}", inp);
         }
         input.copy_from_slice(&inp);
         let elapsed = now.elapsed();
