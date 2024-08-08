@@ -1,3 +1,5 @@
+#[cfg(feature = "r1cs")]
+pub mod constraints;
 pub mod fields;
 pub mod permute;
 use std::usize;
@@ -20,7 +22,6 @@ use sha3::digest::ExtendableOutput;
 use sha3::digest::Update;
 use sha3::Shake128;
 use sha3::Shake128Reader;
-use std::time::Instant;
 
 use self::permute::MonolithPermute;
 
@@ -42,7 +43,7 @@ pub struct MonolithParams {
 
 impl<const Y: usize> CRHScheme for CRH64<Y> {
     type Input = [F64];
-    type Output = [F64; 4];
+    type Output = F64;
     type Parameters = MonolithParams;
     fn setup<R: ark_std::rand::prelude::Rng>(_r: &mut R) -> Result<Self::Parameters, Error> {
         let rounds: u8 = 6;
@@ -87,14 +88,11 @@ impl<const Y: usize> CRHScheme for CRH64<Y> {
         let input = input.borrow();
         let sponge_params = SpongeConfig::new(8, 4, parameters);
         let mut sponge = MonolithSponge::<F64>::new(&sponge_params);
-        let now = Instant::now();
         sponge.absorb(&input);
-        let res = sponge.squeeze_field_elements::<F64>(4);
-        let elapsed = now.elapsed();
-        println!("Elapsed evaluate: {:.2?}", elapsed);
-        let mut outp = [F64::zero(); 4];
-        outp.copy_from_slice(&res);
-        Ok(outp)
+        let res = sponge.squeeze_field_elements::<F64>(1);
+        // let mut outp = [F64::zero(); 4];
+        // outp.copy_from_slice(&res);
+        Ok(res[0])
     }
 }
 
@@ -166,12 +164,14 @@ impl TwoToOneCRHScheme for TwoToOneCrhScheme64 {
 #[cfg(test)]
 pub mod test {
     use super::*;
+    // use crate::crh::sha256::Sha256;
     use ark_ff::UniformRand;
-    use rand::thread_rng;
+    // use ark_std::iterable::Iterable;
+    use ark_std::test_rng;
     use std::time::Instant;
     #[test]
     pub fn crh_mono_hash() {
-        let mut rng = thread_rng();
+        let mut rng = test_rng();
         let input = [
             F64::rand(&mut rng),
             F64::rand(&mut rng),
@@ -186,18 +186,26 @@ pub mod test {
             F64::rand(&mut rng),
             F64::rand(&mut rng),
         ];
-
-        let params = CRH64::<12>::setup(&mut rng).unwrap();
         let now = Instant::now();
+        let params = CRH64::<12>::setup(&mut rng).unwrap();
         let out = CRH64::<12>::evaluate(&params, input);
         let elapsed = now.elapsed();
+        // let mut inp = Vec::new();
+        // for ele in input.iter() {
+        //     inp.extend(ele.into_bigint().to_bytes_le());
+        // }
+        // let now = Instant::now();
+        // let params = <Sha256 as CRHScheme>::setup(&mut rng).unwrap();
+        // let out = <Sha256 as CRHScheme>::evaluate(&params, inp.clone());
+        // let elapsed = now.elapsed();
+        // println!("inp: {:?}", inp);
         println!("inp: {:?}", input);
         println!("out: {:?}", out);
         println!("Elapsed: {:.2?}", elapsed);
     }
     #[test]
     pub fn two_to_one_mono_hash() {
-        let mut rng = thread_rng();
+        let mut rng = test_rng();
         let left_input = [
             F64::rand(&mut rng),
             F64::rand(&mut rng),

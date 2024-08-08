@@ -99,6 +99,8 @@ impl<const T: usize> MonolithPermuteVar<T> {
         input: &mut [FpVar<FP64>],
         params: &MonolithParams,
     ) -> Result<(), SynthesisError> {
+        println!("Permute INP CIRC: {:?}", input.value().unwrap());
+        println!("cons before permute: {:?}", input.cs().num_constraints());
         let mut out: [FpVar<FP64>; T] = input
             .to_vec()
             .try_into()
@@ -106,13 +108,11 @@ impl<const T: usize> MonolithPermuteVar<T> {
         self.concrete(&mut out)?;
         for rc in params.round_constants.iter() {
             out = self.bars(out, params.clone())?;
-            println!("after bars circ: {:?}", out.value()?);
             self.bricks(&mut out)?;
-            println!("after bricks circ: {:?}", out.value()?);
             self.concrete_wrc(&mut out, rc)?;
-            println!("after conc circ: {:?}", out.value()?);
         }
         input.clone_from_slice(&out[..T]);
+        println!("cons after permute: {:?}", input.cs().num_constraints());
         Ok(())
     }
 }

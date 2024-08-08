@@ -175,8 +175,7 @@ mod test {
                 AllocatedFp::<Fr>::new_witness(cs.clone(), || Ok(elem)).unwrap(),
             ));
         }
-
-        let params_g = CRHParametersVar::<Fr>::new_witness(cs, || Ok(params)).unwrap();
+        let params_g = CRHParametersVar::<Fr>::new_witness(cs.clone(), || Ok(params)).unwrap();
         let crh_a_g = CRHGadget::<Fr>::evaluate(&params_g, &test_a_g).unwrap();
         let crh_b_g = CRHGadget::<Fr>::evaluate(&params_g, &test_b_g).unwrap();
         let crh_g = TwoToOneCRHGadget::<Fr>::compress(&params_g, &crh_a_g, &crh_b_g).unwrap();
