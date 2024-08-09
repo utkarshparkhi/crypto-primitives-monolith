@@ -97,3 +97,9 @@ name = "merkle_tree"
 path = "benches/merkle_tree.rs"
 harness = false
 required-features = [ "merkle_tree" ]
+
+[[bench]]
+name = "monolith_hash"
+path = "benches/monolith.rs"
+harness = false
+required-features = ["crh"]

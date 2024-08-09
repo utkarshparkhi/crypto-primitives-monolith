@@ -33,7 +33,7 @@ pub struct MonolithSpongeVar {
     pub mode: DuplexSpongeMode,
 }
 
-impl SpongeWithGadget<FP64> for MonolithSponge<FP64> {
+impl SpongeWithGadget<FP64> for MonolithSponge {
     type Var = MonolithSpongeVar;
 }
 
@@ -118,7 +118,7 @@ impl MonolithSpongeVar {
     }
 }
 
-impl CryptographicSpongeVar<FP64, MonolithSponge<FP64>> for MonolithSpongeVar {
+impl CryptographicSpongeVar<FP64, MonolithSponge> for MonolithSpongeVar {
     type Parameters = SpongeConfig;
 
     #[tracing::instrument(target = "r1cs", skip(cs))]

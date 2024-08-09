@@ -87,7 +87,7 @@ impl<const Y: usize> CRHScheme for CRH64<Y> {
     ) -> Result<Self::Output, Error> {
         let input = input.borrow();
         let sponge_params = SpongeConfig::new(8, 4, parameters);
-        let mut sponge = MonolithSponge::<F64>::new(&sponge_params);
+        let mut sponge = MonolithSponge::new(&sponge_params);
         sponge.absorb(&input);
         let res = sponge.squeeze_field_elements::<F64>(1);
         // let mut outp = [F64::zero(); 4];

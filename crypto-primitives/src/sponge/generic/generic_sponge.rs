@@ -6,11 +6,13 @@ use crate::{
         DuplexSpongeMode, FieldBasedCryptographicSponge, FieldElementSize, SpongeExt,
     },
 };
+use ark_ff::fields::Field;
 use ark_ff::{BigInteger, PrimeField};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::any::TypeId;
 #[cfg(not(feature = "std"))]
 use ark_std::vec::Vec;
+use ark_std::Zero;
 
 /// Config and RNG used
 #[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
@@ -25,31 +27,22 @@ pub struct SpongeConfig {
 }
 
 #[derive(Clone)]
-pub struct MonolithSponge<F: PrimeField> {
+pub struct MonolithSponge {
     /// Sponge Config
     pub parameters: SpongeConfig,
     // Sponge State
     /// Current sponge's state (current elements in the permutation block)
-    pub state: Vec<F>,
+    pub state: Vec<F64>,
     /// Current mode (whether its absorbing or squeezing)
     pub mode: DuplexSpongeMode,
 }
 
-impl<F: PrimeField> MonolithSponge<F> {
+impl MonolithSponge {
     fn permute(&mut self) {
-        let mut input: Vec<F64> = vec![];
-        for i in 0..self.parameters.params.round_constants[0].len() {
-            input.push(F64::from_le_bytes_mod_order(
-                &self.state[i].into_bigint().to_bytes_le(),
-            ))
-        }
-        MonolithPermute::<12>::permute(input.as_mut_slice(), &self.parameters.params);
-        for i in 0..self.parameters.params.round_constants[0].len() {
-            self.state[i] = F::from_le_bytes_mod_order(&input[i].into_bigint().to_bytes_le());
-        }
+        MonolithPermute::<12>::permute(self.state.as_mut_slice(), &self.parameters.params);
     }
     // Absorbs everything in elements, this does not end in an absorbtion.
-    fn absorb_internal(&mut self, mut rate_start_index: usize, elements: &[F]) {
+    fn absorb_internal(&mut self, mut rate_start_index: usize, elements: &[F64]) {
         let mut remaining_elements = elements;
 
         loop {
@@ -81,7 +74,7 @@ impl<F: PrimeField> MonolithSponge<F> {
     }
 
     // Squeeze |output| many elements. This does not end in a squeeze
-    fn squeeze_internal(&mut self, mut rate_start_index: usize, output: &mut [F]) {
+    fn squeeze_internal(&mut self, mut rate_start_index: usize, output: &mut [F64]) {
         let mut output_remaining = output;
         loop {
             // if we can finish in this call
@@ -124,10 +117,10 @@ impl SpongeConfig {
     }
 }
 
-impl<F: PrimeField> CryptographicSponge for MonolithSponge<F> {
+impl CryptographicSponge for MonolithSponge {
     type Config = SpongeConfig;
     fn new(parameters: &Self::Config) -> Self {
-        let state = vec![F::zero(); parameters.rate + parameters.capacity];
+        let state = vec![F64::zero(); parameters.rate + parameters.capacity];
         let mode = DuplexSpongeMode::Absorbing {
             next_absorb_index: 0,
         };
@@ -140,7 +133,7 @@ impl<F: PrimeField> CryptographicSponge for MonolithSponge<F> {
     }
 
     fn absorb(&mut self, input: &impl Absorb) {
-        let elems = input.to_sponge_field_elements_as_vec::<F>();
+        let elems = input.to_sponge_field_elements_as_vec::<F64>();
         if elems.is_empty() {
             return;
         }
@@ -164,7 +157,7 @@ impl<F: PrimeField> CryptographicSponge for MonolithSponge<F> {
     }
 
     fn squeeze_bytes(&mut self, num_bytes: usize) -> Vec<u8> {
-        let usable_bytes = ((F::MODULUS_BIT_SIZE - 1) / 8) as usize;
+        let usable_bytes = ((F64::MODULUS_BIT_SIZE - 1) / 8) as usize;
 
         let num_elements = (num_bytes + usable_bytes - 1) / usable_bytes;
         let src_elements = self.squeeze_native_field_elements(num_elements);
@@ -180,7 +173,7 @@ impl<F: PrimeField> CryptographicSponge for MonolithSponge<F> {
     }
 
     fn squeeze_bits(&mut self, num_bits: usize) -> Vec<bool> {
-        let usable_bits = (F::MODULUS_BIT_SIZE - 1) as usize;
+        let usable_bits = (F64::MODULUS_BIT_SIZE - 1) as usize;
 
         let num_elements = (num_bits + usable_bits - 1) / usable_bits;
         let src_elements = self.squeeze_native_field_elements(num_elements);
@@ -199,7 +192,7 @@ impl<F: PrimeField> CryptographicSponge for MonolithSponge<F> {
         &mut self,
         sizes: &[FieldElementSize],
     ) -> Vec<F2> {
-        if F::characteristic() == F2::characteristic() {
+        if F64::characteristic() == F2::characteristic() {
             // native case
             let mut buf = Vec::with_capacity(sizes.len());
             field_cast(
@@ -214,7 +207,7 @@ impl<F: PrimeField> CryptographicSponge for MonolithSponge<F> {
     }
 
     fn squeeze_field_elements<F2: PrimeField>(&mut self, num_elements: usize) -> Vec<F2> {
-        if TypeId::of::<F>() == TypeId::of::<F2>() {
+        if TypeId::of::<F64>() == TypeId::of::<F2>() {
             let result = self.squeeze_native_field_elements(num_elements);
             let mut cast = Vec::with_capacity(result.len());
             field_cast(&result, &mut cast).unwrap();
@@ -227,9 +220,9 @@ impl<F: PrimeField> CryptographicSponge for MonolithSponge<F> {
     }
 }
 
-impl<F: PrimeField> FieldBasedCryptographicSponge<F> for MonolithSponge<F> {
-    fn squeeze_native_field_elements(&mut self, num_elements: usize) -> Vec<F> {
-        let mut squeezed_elems = vec![F::zero(); num_elements];
+impl FieldBasedCryptographicSponge<F64> for MonolithSponge {
+    fn squeeze_native_field_elements(&mut self, num_elements: usize) -> Vec<F64> {
+        let mut squeezed_elems = vec![F64::zero(); num_elements];
         match self.mode {
             DuplexSpongeMode::Absorbing {
                 next_absorb_index: _,
@@ -253,13 +246,13 @@ impl<F: PrimeField> FieldBasedCryptographicSponge<F> for MonolithSponge<F> {
 
 #[derive(Clone)]
 /// Stores the state of a Poseidon Sponge. Does not store any parameter.
-pub struct PoseidonSpongeState<F: PrimeField> {
-    state: Vec<F>,
+pub struct MonolithSpongeState {
+    state: Vec<F64>,
     mode: DuplexSpongeMode,
 }
 
-impl<CF: PrimeField> SpongeExt for MonolithSponge<CF> {
-    type State = PoseidonSpongeState<CF>;
+impl SpongeExt for MonolithSponge {
+    type State = MonolithSpongeState;
 
     fn from_state(state: Self::State, params: &Self::Config) -> Self {
         let mut sponge = Self::new(params);

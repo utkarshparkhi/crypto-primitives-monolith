@@ -2,10 +2,11 @@ use std::usize;
 
 use crate::crh::monolith::fields::goldilocks::{Fr as F64, FrConfig};
 use crate::crh::monolith::MonolithParams;
+use ark_ff::BigInteger;
 use ark_ff::Field;
 use ark_ff::MontBackend;
+use ark_ff::PrimeField;
 use ark_ff::Zero;
-use ark_ff::{BigInteger64, PrimeField};
 
 mod mds_12;
 mod mds_8;
@@ -15,22 +16,26 @@ pub mod constraints;
 
 pub struct MonolithPermute<const T: usize>;
 impl<const T: usize> MonolithPermute<T> {
-    // pub fn s(byt: u8) -> u8 {
-    //     (byt ^ (!byt.rotate_left(1) & byt.rotate_left(2) & byt.rotate_left(3))).rotate_left(1)
-    // }
+    pub fn s(byt: u8) -> u8 {
+        (byt ^ (!byt.rotate_left(1) & byt.rotate_left(2) & byt.rotate_left(3))).rotate_left(1)
+    }
     pub fn bar(element: F64) -> F64 {
         // let mut le_bytes = element.into_bigint().to_bytes_le();
         // for byt in &mut le_bytes {
         //     *byt = Self::s(*byt);
         // }
-        let mut ele: u64 = element.into_bigint().0[0];
+        let mut ele: u64 =
+            u64::from_le_bytes(element.into_bigint().to_bytes_le().try_into().unwrap());
+
         let limbl1 = ((ele & 0x8080808080808080) >> 7) | ((ele & 0x7F7F7F7F7F7F7F7F) << 1); //left rot by 1
         let limbl2 = ((ele & 0xC0C0C0C0C0C0C0C0) >> 6) | ((ele & 0x3F3F3F3F3F3F3F3F) << 2); //left rot by 2
         let limbl3 = ((ele & 0xE0E0E0E0E0E0E0E0) >> 5) | ((ele & 0x1F1F1F1F1F1F1F1F) << 3); //left rot by 3
         ele = ele ^ (!limbl1 & limbl2 & limbl3);
-        ele = ele.rotate_left(1);
+
+        ele = ((ele & 0x8080808080808080) >> 7) | ((ele & 0x7F7F7F7F7F7F7F7F) << 1); //left rot by 1
+        <F64 as PrimeField>::from_le_bytes_mod_order(&ele.to_le_bytes())
         // le_bytes.iter_mut().for_each(|byt| *byt = Self::s(*byt));
-        <F64 as PrimeField>::from_bigint(BigInteger64::from(ele)).unwrap()
+        // <F64 as PrimeField>::from_le_bytes_mod_order(&le_bytes)
     }
     pub fn bars(input: &mut [F64; T], params: &MonolithParams) {
         let mut out_bars: Vec<_> = vec![];
@@ -61,6 +66,7 @@ impl<const T: usize> MonolithPermute<T> {
             );
         }
     }
+
     pub fn concrete_wrc_u128(input: &mut [u128; T], round_constant: &[F64]) {
         if T == 8 {
             mds_8::mds_multiply_with_rc_u128::<MontBackend<FrConfig, 1>>(

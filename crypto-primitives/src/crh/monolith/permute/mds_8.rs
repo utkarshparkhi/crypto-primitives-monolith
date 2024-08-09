@@ -129,7 +129,7 @@ pub fn mds_multiply_with_rc_u128<T: FpConfig<1>>(
     for r in 0..8 {
         // Both have less than 40 bits
         state[r] = state_l[r] as u128 + ((state_h[r] as u128) << 32);
-        state[r] += round_constants[r].0 .0[0] as u128;
+        state[r] += round_constants[r].into_bigint().0[0] as u128;
         state[r] = u64::from_le_bytes(
             Fp64::<T>::from(state[r])
                 .into_bigint()
