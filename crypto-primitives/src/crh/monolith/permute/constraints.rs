@@ -26,6 +26,14 @@ impl<const T: usize> MonolithPermuteVar<T> {
         }
         let ele = Boolean::le_bits_to_fp(byts.to_bits_le()?.as_slice())?;
         Ok(ele)
+        // let mut bts = <FpVar<FP64> as ToBitsGadget<_>>::to_bits_le(&element)?;
+        // let l1
+        // let rot1_1 = Boolean::<FP64>::constant_vec_from_bytes(&0x8080808080808080u64.to_le_bytes());
+        // let rot1_2 = Boolean::<FP64>::constant_vec_from_bytes(&0x7F7F7F7F7F7F7F7Fu64.to_le_bytes());
+        // let rot2_1 = Boolean::<FP64>::constant_vec_from_bytes(&0xC0C0C0C0C0C0C0C0u64.to_le_bytes());
+        // let rot2_2 = Boolean::<FP64>::constant_vec_from_bytes(&0x3F3F3F3F3F3F3F3Fu64.to_le_bytes());
+        // let limb1: Vec<Boolean<FP64>> = bts.iter().zip(rot1_1).map(|(b, r)| b & r).collect();
+        // Ok(FpVar::<FP64>::zero())
     }
     #[tracing::instrument(target = "r1cs", skip(self))]
     pub fn bars(
@@ -106,10 +114,14 @@ impl<const T: usize> MonolithPermuteVar<T> {
             .try_into()
             .expect("array size does not match");
         self.concrete(&mut out)?;
+        println!("cons aft fconc: {:?}", out.cs().num_constraints());
         for rc in params.round_constants.iter() {
             out = self.bars(out, params.clone())?;
+            println!("cons aft bar: {:?}", out.cs().num_constraints());
             self.bricks(&mut out)?;
+            println!("cons aft bri: {:?}", out.cs().num_constraints());
             self.concrete_wrc(&mut out, rc)?;
+            println!("cons aft conc: {:?}", out.cs().num_constraints());
         }
         input.clone_from_slice(&out[..T]);
         println!("cons after permute: {:?}", input.cs().num_constraints());

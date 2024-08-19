@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate criterion;
 
+use ark_crypto_primitives::crh::sha256::Sha256;
 use ark_crypto_primitives::crh::{
     pedersen::{Window, CRH as PedersenCRH},
     CRHScheme,
@@ -27,10 +28,10 @@ fn pedersen_crh_setup(c: &mut Criterion) {
 
 fn pedersen_crh_eval(c: &mut Criterion) {
     let mut rng = &mut ark_std::test_rng();
-    let parameters = PedersenCRH::<Edwards, HashWindow>::setup(&mut rng).unwrap();
+    let parameters = Sha256::setup(&mut rng).unwrap();
     let input = vec![5u8; 128];
     c.bench_function("Pedersen CRH Eval", move |b| {
-        b.iter(|| PedersenCRH::<Edwards, HashWindow>::evaluate(&parameters, input.clone()).unwrap())
+        b.iter(|| Sha256::evaluate(&parameters, input.clone()).unwrap())
     });
 }
 

@@ -7,11 +7,13 @@ use core::usize;
 use crate::crh::monolith::fields::goldilocks::Fr as FP64;
 use crate::crh::monolith::MonolithParams;
 use crate::crh::monolith::CRH64;
-use crate::crh::CRHScheme;
-use crate::crh::CRHSchemeGadget;
+use crate::crh::{CRHScheme, TwoToOneCRHSchemeGadget};
+use crate::crh::{CRHSchemeGadget, TwoToOneCRHScheme};
 use crate::sponge::constraints::CryptographicSpongeVar;
 use crate::sponge::generic::constraints::MonolithSpongeVar;
 use crate::sponge::generic::generic_sponge::SpongeConfig;
+
+use super::TwoToOneCrhScheme64;
 #[derive(Clone)]
 pub struct CRHParametersVar {
     pub parameters: MonolithParams,
@@ -61,6 +63,49 @@ impl<const T: usize> CRHSchemeGadget<CRH64<T>, FP64> for CRHGadget<T> {
         }
     }
 }
+pub struct TwoToOneCRHGadget {
+    field_phantom: PhantomData<FP64>,
+}
+// impl TwoToOneCRHSchemeGadget<TwoToOneCrhScheme64, FP64> for TwoToOneCRHGadget {
+//     type InputVar = [FpVar<FP64>; 4];
+//     type OutputVar = [FpVar<FP64>; 4];
+//     type ParametersVar = CRHParametersVar;
+//     fn evaluate(
+//         parameters: &Self::ParametersVar,
+//         left_input: &Self::InputVar,
+//         right_input: &Self::InputVar,
+//     ) -> Result<Self::OutputVar, ark_relations::r1cs::SynthesisError> {
+//         Self::compress(parameters, left_input, right_input)
+//     }
+//     fn compress(
+//         parameters: &Self::ParametersVar,
+//         left_input: &Self::OutputVar,
+//         right_input: &Self::OutputVar,
+//     ) -> Result<Self::OutputVar, ark_relations::r1cs::SynthesisError> {
+//         let cs = left_input.cs().or(right_input.cs());
+//         if cs.is_none() {
+//             let outp = TwoToOneCrhScheme64::evaluate(
+//                 &parameters.parameters,
+//                 left_input.value()?,
+//                 right_input.value()?,
+//             )
+//             .unwrap();
+//             Ok([
+//                 FpVar::Constant(outp[0]),
+//                 FpVar::Constant(outp[1]),
+//                 FpVar::Constant(outp[2]),
+//                 FpVar::Constant(outp[3]),
+//             ])
+//         } else {
+//             let sponge_config = SpongeConfig::new(4, 8, &parameters.parameters);
+//             let mut sponge = MonolithSpongeVar::new(cs, &sponge_config);
+//             sponge.absorb(&left_input.as_ref());
+//             sponge.absorb(&right_input.as_ref());
+//             let res = sponge.squeeze_field_elements(4)?;
+//             Ok(res.try_into().unwrap())
+//         }
+//     }
+// }
 #[cfg(test)]
 mod test {
     use ark_ff::UniformRand;
