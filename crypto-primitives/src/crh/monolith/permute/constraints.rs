@@ -76,6 +76,19 @@ impl<const T: usize> MonolithPermuteVar<T> {
                 out.push(cur);
             }
             input.clone_from_slice(&out[..T])
+        } else if T == 8 {
+            let row = [23, 8, 13, 10, 7, 6, 21, 8];
+            let mds = mds_12::circ_mat::<MontBackend<FrConfig, 1>>(&row);
+            let mut out = Vec::new();
+            for row in 0..T {
+                let mut cur = FpVar::<FP64>::zero();
+                for (col, inp) in input.iter().enumerate().take(T) {
+                    let term = inp * mds[row][col];
+                    cur += term;
+                }
+                out.push(cur);
+            }
+            input.clone_from_slice(&out[..T]);
         }
         Ok(())
     }
@@ -99,6 +112,20 @@ impl<const T: usize> MonolithPermuteVar<T> {
                 out.push(cur);
             }
             input.clone_from_slice(&out[..T]);
+        } else if T == 8 {
+            let row = [23, 8, 13, 10, 7, 6, 21, 8];
+            let mds = mds_12::circ_mat::<MontBackend<FrConfig, 1>>(&row);
+            let mut out = Vec::new();
+            for row in 0..T {
+                let mut cur = FpVar::<FP64>::zero();
+                cur += round_constants[row];
+                for (col, inp) in input.iter().enumerate().take(T) {
+                    let term = inp * mds[row][col];
+                    cur += term;
+                }
+                out.push(cur);
+            }
+            input.clone_from_slice(&out[..T]);
         }
         Ok(())
     }
@@ -107,24 +134,17 @@ impl<const T: usize> MonolithPermuteVar<T> {
         input: &mut [FpVar<FP64>],
         params: &MonolithParams,
     ) -> Result<(), SynthesisError> {
-        println!("Permute INP CIRC: {:?}", input.value().unwrap());
-        println!("cons before permute: {:?}", input.cs().num_constraints());
         let mut out: [FpVar<FP64>; T] = input
             .to_vec()
             .try_into()
             .expect("array size does not match");
         self.concrete(&mut out)?;
-        println!("cons aft fconc: {:?}", out.cs().num_constraints());
         for rc in params.round_constants.iter() {
             out = self.bars(out, params.clone())?;
-            println!("cons aft bar: {:?}", out.cs().num_constraints());
             self.bricks(&mut out)?;
-            println!("cons aft bri: {:?}", out.cs().num_constraints());
             self.concrete_wrc(&mut out, rc)?;
-            println!("cons aft conc: {:?}", out.cs().num_constraints());
         }
         input.clone_from_slice(&out[..T]);
-        println!("cons after permute: {:?}", input.cs().num_constraints());
         Ok(())
     }
 }

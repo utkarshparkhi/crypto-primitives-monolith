@@ -43,7 +43,7 @@ pub struct MonolithParams {
 
 impl<const Y: usize> CRHScheme for CRH64<Y> {
     type Input = [F64];
-    type Output = F64;
+    type Output = Vec<F64>;
     type Parameters = MonolithParams;
     fn setup<R: ark_std::rand::prelude::Rng>(_r: &mut R) -> Result<Self::Parameters, Error> {
         let rounds: u8 = 6;
@@ -89,16 +89,16 @@ impl<const Y: usize> CRHScheme for CRH64<Y> {
         let sponge_params = SpongeConfig::new(8, 4, parameters);
         let mut sponge = MonolithSponge::new(&sponge_params);
         sponge.absorb(&input);
-        let res = sponge.squeeze_field_elements::<F64>(1);
+        let res = sponge.squeeze_field_elements::<F64>(4);
         // let mut outp = [F64::zero(); 4];
         // outp.copy_from_slice(&res);
-        Ok(res[0])
+        Ok(res)
     }
 }
 
 impl TwoToOneCRHScheme for TwoToOneCrhScheme64 {
-    type Input = [F64; 4];
-    type Output = [F64; 4];
+    type Input = Vec<F64>;
+    type Output = Vec<F64>;
     type Parameters = MonolithParams;
     fn setup<R: rand::prelude::Rng>(_r: &mut R) -> Result<Self::Parameters, Error> {
         let rounds: u8 = 6;
@@ -152,8 +152,12 @@ impl TwoToOneCRHScheme for TwoToOneCrhScheme64 {
 
         inp[..4].copy_from_slice(&left_input.borrow()[..4]);
         inp[4..].copy_from_slice(&right_input.borrow()[..4]);
-        let mut out: [F64; 4] = *left_input.borrow();
+        let mut out: Vec<F64> = vec![];
+        inp[..4].clone_into(&mut out);
+        println!("INP: {:?}", inp);
         MonolithPermute::<8>::permute(&mut inp, parameters);
+        println!("INP PERM : {:?}", inp);
+
         for i in 0..4 {
             out[i] += inp[i];
         }
@@ -206,13 +210,13 @@ pub mod test {
     #[test]
     pub fn two_to_one_mono_hash() {
         let mut rng = test_rng();
-        let left_input = [
+        let left_input = vec![
             F64::rand(&mut rng),
             F64::rand(&mut rng),
             F64::rand(&mut rng),
             F64::rand(&mut rng),
         ];
-        let right_input = [
+        let right_input = vec![
             F64::rand(&mut rng),
             F64::rand(&mut rng),
             F64::rand(&mut rng),

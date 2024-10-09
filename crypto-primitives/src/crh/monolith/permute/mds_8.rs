@@ -75,9 +75,9 @@ pub fn mds_multiply_with_rc<T: FpConfig<1>>(
     let state_l = mds_multiply_freq(state_l);
     for r in 0..8 {
         // Both have less than 40 bits
-        let mut s = state_l[r] as u128 + ((state_h[r] as u128) << 32);
-        s += round_constants[r].0 .0[0] as u128;
+        let s = state_l[r] as u128 + ((state_h[r] as u128) << 32);
         state[r] = Fp64::<T>::from(s);
+        state[r] += round_constants[r];
     }
 }
 
@@ -278,7 +278,7 @@ mod mds_tests {
         out
     }
 
-    fn circ_mat(row: &[u64]) -> Vec<Vec<Scalar>> {
+    pub fn circ_mat(row: &[u64]) -> Vec<Vec<Scalar>> {
         let t = row.len();
         let mut mat: Vec<Vec<Scalar>> = Vec::with_capacity(t);
         let mut rot: Vec<Scalar> = row
