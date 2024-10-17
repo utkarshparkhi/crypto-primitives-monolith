@@ -1,5 +1,5 @@
 [package]
-name = "ark-crypto-primitives"
+name = "ark-crypto-primitives_m"
 description.workspace = true
 documentation.workspace = true
 keywords.workspace = true
