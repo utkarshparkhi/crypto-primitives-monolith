@@ -344,6 +344,7 @@ mod test {
         let mut inp1_var = vec![];
         let mut inp2_var = vec![];
         let cs = ConstraintSystem::<FP64>::new_ref();
+        // cs.set_optimization_goal(ark_relations::r1cs::OptimizationGoal::Constraints);
         for val in inp1.iter() {
             inp1_var.push(
                 FpVar::<FP64>::new_witness(cs.clone(), || Ok(val.clone())).expect("inp var failed"),
@@ -363,6 +364,11 @@ mod test {
             &VecFpVar { vars: inp2_var },
         )
         .unwrap();
+        cs.finalize();
+        // println!("A: {:?}", cs.to_matrices().unwrap().a);
+        // println!("B: {:?}", cs.to_matrices().unwrap().b);
+        // println!("C: {:?}", cs.to_matrices().unwrap().c);
+        println!("num cons: {:?}", cs.num_constraints());
         println!("outp: {:?}", outp);
         println!("outp_var: {:?}", outp_var.vars.value().unwrap());
         assert_eq!(outp, outp_var.vars.value().unwrap());

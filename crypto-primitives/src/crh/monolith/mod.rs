@@ -154,9 +154,7 @@ impl TwoToOneCRHScheme for TwoToOneCrhScheme64 {
         inp[4..].copy_from_slice(&right_input.borrow()[..4]);
         let mut out: Vec<F64> = vec![];
         inp[..4].clone_into(&mut out);
-        println!("INP: {:?}", inp);
         MonolithPermute::<8>::permute(&mut inp, parameters);
-        println!("INP PERM : {:?}", inp);
 
         for i in 0..4 {
             out[i] += inp[i];
@@ -194,15 +192,6 @@ pub mod test {
         let params = CRH64::<12>::setup(&mut rng).unwrap();
         let out = CRH64::<12>::evaluate(&params, input);
         let elapsed = now.elapsed();
-        // let mut inp = Vec::new();
-        // for ele in input.iter() {
-        //     inp.extend(ele.into_bigint().to_bytes_le());
-        // }
-        // let now = Instant::now();
-        // let params = <Sha256 as CRHScheme>::setup(&mut rng).unwrap();
-        // let out = <Sha256 as CRHScheme>::evaluate(&params, inp.clone());
-        // let elapsed = now.elapsed();
-        // println!("inp: {:?}", inp);
         println!("inp: {:?}", input);
         println!("out: {:?}", out);
         println!("Elapsed: {:.2?}", elapsed);
